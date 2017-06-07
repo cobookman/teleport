@@ -1,0 +1,21 @@
+language: java
+jdk:
+- oraclejdk8
+os:
+- linux
+before_install:
+- openssl aes-256-cbc -K $encrypted_0f54cb7871bb_key -iv $encrypted_0f54cb7871bb_iv -in service_account.json.enc -out service_account.json -d
+- curl https://sdk.cloud.google.com | bash
+- ~/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file=service_account.json
+- ~/google-cloud-sdk/bin/gcloud config set project $(cat service_account.json | jq
+  '.project_id' | tr -d "\"")
+- export GOOGLE_APPLICATION_CREDENTIALS="$TRAVIS_BUILD_DIR/service_account.json"
+
+script:
+- ./gradlew test --info
+- ./scripts/makeTemplate_gcsToDatastore.sh
+- ./scripts/makeTemplate_datastoreToGcs.sh
+
+env:
+  global:
+  - CLOUDSDK_CORE_DISABLE_PROMPTS: 1
