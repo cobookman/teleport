@@ -7,3 +7,4 @@ gradle/
 bin/
 .idea/
 gen/
+service_account.json
