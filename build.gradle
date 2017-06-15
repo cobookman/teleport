@@ -50,3 +50,7 @@ shadowJar {
     version = version
     mergeServiceFiles()
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.5'
+}
