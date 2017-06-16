@@ -12,7 +12,7 @@ before_install:
 - export GOOGLE_APPLICATION_CREDENTIALS="$TRAVIS_BUILD_DIR/service_account.json"
 
 script:
-- gradle test --info
+- ./gradlew test --info
 - ./scripts/makeTemplate_gcsToDatastore.sh
 - ./scripts/makeTemplate_datastoreToGcs.sh
 

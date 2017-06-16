@@ -22,7 +22,7 @@ if [[ -z $TEMPLATE ]]; then
   read TEMPLATE
 fi
 
-gradle clean build shadowJar
+./gradlew clean build shadowJar
 
 java -jar build/libs/shadow-1.0-Alpha.jar \
   gcs_to_datastore \
