@@ -73,6 +73,10 @@ public abstract class JSTransform {
     String prefixPath = gcsJSPath().replace("gs://" + bucketName + "/", "");
 
     Bucket bucket = getStorageService().get(bucketName);
+    if (bucket == null || !bucket.exists()) {
+      throw new IllegalArgumentException(
+          "Bucket does not exist, or do not have adequate permissions");
+    }
 
     ArrayList<String> filePaths = new ArrayList<>();
     if (prefixPath.endsWith(".js")) {
@@ -87,10 +91,15 @@ public abstract class JSTransform {
     }
 
     List<String> scripts = new ArrayList<>();
-
     for (String filePath : filePaths) {
-      scripts.add(new String(bucket.get(filePath).getContent()));
+      Blob b = bucket.get(filePath);
+      if (b == null || !b.exists()) {
+        throw new IllegalArgumentException(
+            "File does not exist, or do not have adequate permissions");
+      }
+      scripts.add(new String(b.getContent()));
     }
+
     return scripts;
   }
 

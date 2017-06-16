@@ -26,8 +26,8 @@ fi
 
 java -jar build/libs/shadow-1.0-Alpha.jar \
   gcs_to_datastore \
-  --runner=DataflowRunner \
   --project=$PROJECT \
+  --runner=DataflowRunner \
   --gcpTempLocation=$TEMP \
   --templateLocation=$TEMPLATE
 

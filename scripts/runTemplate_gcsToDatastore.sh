@@ -2,10 +2,9 @@
 
 DATAFLOW_PROJECT="teleport-test-170818"
 DATASTORE_PROJECT="teleport-test-170818"
-TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
-SAVE_PATH="gs://teleport-test/backups/"
-GCS_TRANSFORM="gs://teleport-test/transforms/datastoreToGcsTransform.js"
-GQL="SELECT * FROM SomeKind"
+DATA_PATH="gs://teleport-test/backups/*.json"
+TEMPLATE="gs://teleport-test/templates/gcsToDatastore"
+GCS_TRANSFORM="gs://teleport-test/transforms/gcsToDatastoreTransform.js"
 JOB_NAME=""
 
 
@@ -24,9 +23,9 @@ if [[ -z $TEMPLATE ]]; then
   read TEMPLATE
 fi
 
-if [[ -z $SAVE_PATH ]]; then
-  echo -n "Where to save datstore entities: "
-  read SAVE_PATH
+if [[ -z $DATA_PATH ]]; then
+  echo -n "GCS path of data to be read in: "
+  read DATA_PATH
 fi
 
 if [[ -z $GCS_TRANSFORM ]]; then
@@ -34,10 +33,6 @@ if [[ -z $GCS_TRANSFORM ]]; then
   read GCS_TRANSFORM
 fi
 
-if [[ -z $GQL ]]; then
-  echo -n "GQL Query of datastore entities to fetch: "
-  read GQL
-fi
 
 if [[ -z $JOB_NAME ]]; then
   echo -n "What should the job name be (no spaces): "
@@ -48,4 +43,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters savePath="$SAVE_PATH",gqlQuery="$GQL",datastoreProject=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
+  --parameters jsonPathPrefix=$DATA_PATH,datastoreProject=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
