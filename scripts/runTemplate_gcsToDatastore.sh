@@ -10,36 +10,36 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-DATAFLOW_PROJECT="teleport-test-170818"
-DATASTORE_PROJECT="teleport-test-170818"
-DATA_PATH="gs://teleport-test/backups/*.json"
-TEMPLATE="gs://teleport-test/templates/gcsToDatastore"
-GCS_TRANSFORM="gs://teleport-test/transforms/gcsToDatastoreTransform.js"
+DATAFLOW_PROJECT=""
+DATASTORE_PROJECT=""
+DATA_PATH=""
+TEMPLATE=""
+GCS_TRANSFORM=""
 JOB_NAME=""
 
 
 if [[ -z $DATAFLOW_PROJECT ]]; then
-  echo -n "Project to run dataflow job in: "
+  echo -n "Project Id to run dataflow job in (my-project-id): "
   read DATAFLOW_PROJECT
 fi
 
 if [[ -z $DATASTORE_PROJECT ]]; then
-  echo -n "Project to pull Datastore Entities From: "
+  echo -n "Project Id to pull Datastore Entities From (my-project-id): "
   read DATASTORE_PROJECT
 fi
 
 if [[ -z $TEMPLATE ]]; then
-  echo -n "Where is the Dataflow Template Located: "
+  echo -n "Where is the Dataflow Template Located (gs://mybucket/templates/gcsToDatastore): "
   read TEMPLATE
 fi
 
 if [[ -z $DATA_PATH ]]; then
-  echo -n "GCS path of data to be read in: "
+  echo -n "GCS path of data to be read in (gs://mybucket/data/*.json): "
   read DATA_PATH
 fi
 
 if [[ -z $GCS_TRANSFORM ]]; then
-  echo -n "What is the GCS path of the javascript transform: "
+  echo -n "What is the GCS path of the javascript transform (gs://mybucket/transforms/): "
   read GCS_TRANSFORM
 fi
 

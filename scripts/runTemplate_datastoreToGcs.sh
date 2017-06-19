@@ -10,42 +10,42 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-DATAFLOW_PROJECT="teleport-test-170818"
-DATASTORE_PROJECT="teleport-test-170818"
-TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
-SAVE_PATH="gs://teleport-test/backups/"
-GCS_TRANSFORM="gs://teleport-test/transforms/datastoreToGcsTransform.js"
-GQL="SELECT * FROM SomeKind"
+DATAFLOW_PROJECT=""
+DATASTORE_PROJECT=""
+TEMPLATE=""
+SAVE_PATH=""
+GCS_TRANSFORM=""
+GQL=""
 JOB_NAME=""
 
 
 if [[ -z $DATAFLOW_PROJECT ]]; then
-  echo -n "Project to run dataflow job in: "
+  echo -n "Project Id to run dataflow job in (my-project-id): "
   read DATAFLOW_PROJECT
 fi
 
 if [[ -z $DATASTORE_PROJECT ]]; then
-  echo -n "Project to pull Datastore Entities From: "
+  echo -n "Project to pull Datastore Entities From (my-project-id): "
   read DATASTORE_PROJECT
 fi
 
 if [[ -z $TEMPLATE ]]; then
-  echo -n "Where is the Dataflow Template Located: "
+  echo -n "Where is the Dataflow Template Located (gs://mybucket/templates/datastore2Gcs): "
   read TEMPLATE
 fi
 
 if [[ -z $SAVE_PATH ]]; then
-  echo -n "Where to save datstore entities: "
+  echo -n "Where to save datstore entities (gs://mybucket/backups/12.30.2017.SomeKind): "
   read SAVE_PATH
 fi
 
 if [[ -z $GCS_TRANSFORM ]]; then
-  echo -n "What is the GCS path of the javascript transform: "
+  echo -n "What is the GCS path of the javascript transform (gs://mybucket/transforms/): "
   read GCS_TRANSFORM
 fi
 
 if [[ -z $GQL ]]; then
-  echo -n "GQL Query of datastore entities to fetch: "
+  echo -n "GQL Query of datastore entities to fetch (Select * FROM SomeKind): "
   read GQL
 fi
 

@@ -13,22 +13,22 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR/..
 
-PROJECT="teleport-test-170818"
-TEMP="gs://teleport-test/temp/"
-TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
+PROJECT=""
+TEMP=""
+TEMPLATE=""
 
 if [[ -z $PROJECT ]]; then
-  echo -n "What is the project Id: "
+  echo -n "Project Id hosting the templates (my-project-id): "
   read PROJECT
 fi
 
 if [[ -z $TEMP ]]; then
-  echo -n "What is the temp location: "
+  echo -n "What is the temp location for the dataflow jobs (gs://...): "
   read TEMP
 fi
 
 if [[ -z $TEMPLATE ]]; then
-  echo -n "Where to store this template stored: "
+  echo -n "Where to store this template (gs://...): "
   read TEMPLATE
 fi
 
