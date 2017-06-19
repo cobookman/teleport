@@ -13,8 +13,8 @@ before_install:
 
 script:
 - ./gradlew test --info
-- ./scripts/makeTemplate_gcsToDatastore.sh
-- ./scripts/makeTemplate_datastoreToGcs.sh
+- ./src/test/resources/scripts/makeTemplate_gcsToDatastore.sh
+- ./src/test/resources/scripts/makeTemplate_datastoreToGcs.sh
 
 env:
   global:
