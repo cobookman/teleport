@@ -31,17 +31,14 @@ import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * GCS to Datastore Records
  */
 public class GcsToDatastore {
-  private static final Logger mLogger = LoggerFactory.getLogger(DatastoreToGcs.class);
 
   /**
-   * Runs the DatastoreToGcs dataflow pipeline
+   * Runs the GcsToDatastore dataflow pipeline
    */
   public static void main(String[] args) throws IOException, ScriptException {
     Options options = PipelineOptionsFactory.fromArgs(args)
@@ -57,7 +54,7 @@ public class GcsToDatastore {
             .from(options.getJsonPathPrefix()))
         .apply("GcsToEntity", ParDo.of(new JsonToEntity(options.getJsTransformPath())))
         .apply(DatastoreIO.v1().write()
-            .withProjectId(options.getDatastoreProject()));
+            .withProjectId(options.getDatastoreProjectId()));
 
     pipeline.run();
   }
@@ -73,17 +70,17 @@ public class GcsToDatastore {
     void setJsTransformPath(ValueProvider<String> jsTransformPath);
 
     @Description("Project to save Datastore Entities in")
-    ValueProvider<String> getDatastoreProject();
-    void setDatastoreProject(ValueProvider<String> datastoreProject);
+    ValueProvider<String> getDatastoreProjectId();
+    void setDatastoreProjectId(ValueProvider<String> datastoreProjectId);
   }
 
   /**
    * Converts a Protobuf Encoded Json String to a Datastore Entity
    */
   static class JsonToEntity extends DoFn<String, Entity> {
-    protected JsonFormat.Parser mJsonParser;
-    protected JSTransform mJSTransform;
-    protected ValueProvider<String> mJsTransformPath;
+    private JsonFormat.Parser mJsonParser;
+    private JSTransform mJSTransform;
+    private ValueProvider<String> mJsTransformPath;
 
     public JsonToEntity(ValueProvider<String> jsTransformPath) {
       mJsTransformPath = jsTransformPath;

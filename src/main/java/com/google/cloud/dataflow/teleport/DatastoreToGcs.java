@@ -31,15 +31,11 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import com.google.datastore.v1.Entity;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Exports Datastore Entities to GCS as newline deliminted Protobuf v3 Json.
  */
 public class DatastoreToGcs {
-
-  private static final Logger mLogger = LoggerFactory.getLogger(DatastoreToGcs.class);
 
   /**
    * Runs the DatastoreToGcs dataflow pipeline
@@ -56,7 +52,7 @@ public class DatastoreToGcs {
     pipeline
         .apply("IngestEntities",
             DatastoreIO.v1().read()
-                .withProjectId(options.getDatastoreProject())
+                .withProjectId(options.getDatastoreProjectId())
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
         .apply("EntityToJson", ParDo.of(new EntityToJson(options.getJsTransformPath())))
@@ -79,8 +75,8 @@ public class DatastoreToGcs {
     void setGqlQuery(ValueProvider<String> gqlQuery);
 
     @Description("Project to grab Datastore Entities from")
-    ValueProvider<String> getDatastoreProject();
-    void setDatastoreProject(ValueProvider<String> datastoreProject);
+    ValueProvider<String> getDatastoreProjectId();
+    void setDatastoreProjectId(ValueProvider<String> datastoreProjectId);
 
     @Validation.Required
     @Description("Namespace of requested Entities, use `\"\"` for default")
@@ -96,9 +92,9 @@ public class DatastoreToGcs {
    * Converts a Datstore Entity to Protobuf encoded Json
    */
   public static class EntityToJson extends DoFn<Entity, String> {
-    protected JsonFormat.Printer mJsonPrinter;
-    protected JSTransform mJSTransform;
-    protected ValueProvider<String> mJsTransformPath;
+    private JsonFormat.Printer mJsonPrinter;
+    private JSTransform mJSTransform;
+    private ValueProvider<String> mJsTransformPath;
 
     public EntityToJson(ValueProvider<String> jsTransformPath) {
       mJsTransformPath = jsTransformPath;

@@ -56,4 +56,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters jsonPathPrefix=$DATA_PATH,datastoreProject=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
+  --parameters jsonPathPrefix=$DATA_PATH,datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
