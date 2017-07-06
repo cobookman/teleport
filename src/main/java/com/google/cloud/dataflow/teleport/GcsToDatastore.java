@@ -19,6 +19,8 @@ import com.google.cloud.dataflow.teleport.DatastoreToGcs.EntityToJson;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Entity.Builder;
+import com.google.datastore.v1.Key;
+import com.google.datastore.v1.PartitionId;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import java.io.IOException;
@@ -146,7 +148,15 @@ public class GcsToDatastore {
       Entity.Builder builder = Entity.newBuilder();
       getJsonParser().merge(entityJson, builder);
       Entity entity = builder.build();
-      c.output(entity);
+
+      // Remove old project id reference from key
+      Key k = entity.getKey();
+      builder.setKey(Key.newBuilder()
+          .addAllPath(k.getPathList())
+          .setPartitionId(PartitionId.newBuilder()
+              .setNamespaceId(k.getPartitionId().getNamespaceId()))
+          .build());
+      c.output(builder.build());
     }
   }
 }
