@@ -13,12 +13,16 @@
 
 package com.google.cloud.dataflow.teleport;
 
+import com.google.auto.value.AutoValue;
+import com.google.cloud.dataflow.teleport.AutoValue_GcsToDatastore_JsonToEntity;
+import com.google.cloud.dataflow.teleport.DatastoreToGcs.EntityToJson;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Entity.Builder;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import java.io.IOException;
+import javax.annotation.Nullable;
 import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
@@ -52,7 +56,10 @@ public class GcsToDatastore {
     pipeline
         .apply("IngestJson", TextIO.read()
             .from(options.getJsonPathPrefix()))
-        .apply("GcsToEntity", ParDo.of(new JsonToEntity(options.getJsTransformPath())))
+        .apply("GcsToEntity", ParDo.of(JsonToEntity.newBuilder()
+            .setJsTransformPath(options.getJsTransformPath())
+            .setJsTransformFunctionName(options.getJsTransformFunctionName())
+            .build()))
         .apply(DatastoreIO.v1().write()
             .withProjectId(options.getDatastoreProjectId()));
 
@@ -69,6 +76,10 @@ public class GcsToDatastore {
     ValueProvider<String> getJsTransformPath();
     void setJsTransformPath(ValueProvider<String> jsTransformPath);
 
+    @Description("Javascript Transform Function Name")
+    ValueProvider<String> getJsTransformFunctionName();
+    void setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
+
     @Description("Project to save Datastore Entities in")
     ValueProvider<String> getDatastoreProjectId();
     void setDatastoreProjectId(ValueProvider<String> datastoreProjectId);
@@ -77,13 +88,23 @@ public class GcsToDatastore {
   /**
    * Converts a Protobuf Encoded Json String to a Datastore Entity
    */
-  static class JsonToEntity extends DoFn<String, Entity> {
+  @AutoValue
+  public abstract static class JsonToEntity extends DoFn<String, Entity> {
     private JsonFormat.Parser mJsonParser;
     private JSTransform mJSTransform;
-    private ValueProvider<String> mJsTransformPath;
 
-    public JsonToEntity(ValueProvider<String> jsTransformPath) {
-      mJsTransformPath = jsTransformPath;
+    abstract ValueProvider<String> jsTransformPath();
+    abstract ValueProvider<String> jsTransformFunctionName();
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract JsonToEntity.Builder setJsTransformPath(ValueProvider<String> jsTransformPath);
+      public abstract JsonToEntity.Builder setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
+      public abstract JsonToEntity build();
+    }
+
+    public static Builder newBuilder() {
+      return new com.google.cloud.dataflow.teleport.AutoValue_GcsToDatastore_JsonToEntity.Builder();
     }
 
     private JsonFormat.Parser getJsonParser() {
@@ -100,14 +121,16 @@ public class GcsToDatastore {
 
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
-        String jsTransformPath = "";
-        if (mJsTransformPath.isAccessible()) {
-          jsTransformPath = mJsTransformPath.get();
+        JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
+        if (jsTransformPath().isAccessible()) {
+          jsTransformBuilder.setGcsJSPath(jsTransformPath().get());
         }
 
-        mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(jsTransformPath)
-            .build();
+        if (jsTransformFunctionName().isAccessible()) {
+          jsTransformBuilder.setFunctionName(jsTransformFunctionName().get());
+        }
+
+        mJSTransform = jsTransformBuilder.build();
       }
       return mJSTransform;
     }
@@ -120,7 +143,7 @@ public class GcsToDatastore {
         entityJson = getJSTransform().invoke(entityJson);
       }
 
-      Builder builder = Entity.newBuilder();
+      Entity.Builder builder = Entity.newBuilder();
       getJsonParser().merge(entityJson, builder);
       Entity entity = builder.build();
       c.output(entity);

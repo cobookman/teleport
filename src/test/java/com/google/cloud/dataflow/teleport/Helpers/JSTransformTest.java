@@ -63,9 +63,10 @@ public class JSTransformTest {
     // Test JS Transform involving multiple files
     JSTransform jsTransform = JSTransform.newBuilder()
         .setGcsJSPath(goodGcsTransform)
+        .setFunctionName("transform")
         .build();
 
-    String output = (String) jsTransform.invoke( "{\"key\": \"value\"}");
+    String output = (String) jsTransform.invoke("{\"key\": \"value\"}");
     String expected = "{\"Some Property\":\"Some Key\",\"entity jsonified\":\"{\\\"key\\\": \\\"value\\\"}\"}";
     Assert.assertEquals(expected, output);
   }

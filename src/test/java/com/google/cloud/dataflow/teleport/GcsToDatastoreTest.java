@@ -32,8 +32,10 @@ public class GcsToDatastoreTest {
 
   @Test
   public void testGcsToDatastore_EntityToJson_noTransform() throws Exception {
-    StaticValueProvider<String> valueProvider = StaticValueProvider.of(null);
-    DoFnTester<String, Entity> fnTester = DoFnTester.of(new JsonToEntity(valueProvider));
+    DoFnTester<String, Entity> fnTester = DoFnTester.of(JsonToEntity.newBuilder()
+        .setJsTransformPath(StaticValueProvider.of(null))
+        .setJsTransformFunctionName(StaticValueProvider.of(null))
+        .build());
     List<Entity> output = fnTester.processBundle(mEntityJson);
     Entity outputEntity = output.get(0);
 

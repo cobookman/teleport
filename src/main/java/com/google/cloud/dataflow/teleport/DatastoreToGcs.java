@@ -13,6 +13,9 @@
 
 package com.google.cloud.dataflow.teleport;
 
+import com.google.auto.value.AutoValue;
+import com.google.cloud.dataflow.teleport.AutoValue_DatastoreToGcs_EntityToJson;
+import com.google.cloud.dataflow.teleport.DatastoreToBq.EntityToTableRow;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 
 import com.google.protobuf.util.JsonFormat;
@@ -55,7 +58,10 @@ public class DatastoreToGcs {
                 .withProjectId(options.getDatastoreProjectId())
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
-        .apply("EntityToJson", ParDo.of(new EntityToJson(options.getJsTransformPath())))
+        .apply("EntityToJson", ParDo.of(EntityToJson.newBuilder()
+            .setJsTransformPath(options.getJsTransformPath())
+            .setJsTransformFunctionName(options.getJsTransformFunctionName())
+            .build()))
         .apply("JsonToGcs", TextIO.write().to(options.getSavePath())
             .withSuffix(".json"));
 
@@ -86,18 +92,32 @@ public class DatastoreToGcs {
     @Description("GCS path to javascript fn for transforming output")
     ValueProvider<String> getJsTransformPath();
     void setJsTransformPath(ValueProvider<String> jsTransformPath);
+
+    @Description("Javascript Transform Function Name")
+    ValueProvider<String> getJsTransformFunctionName();
+    void setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
   }
 
   /**
    * Converts a Datstore Entity to Protobuf encoded Json
    */
-  public static class EntityToJson extends DoFn<Entity, String> {
+  @AutoValue
+  public abstract static class EntityToJson extends DoFn<Entity, String> {
     private JsonFormat.Printer mJsonPrinter;
     private JSTransform mJSTransform;
-    private ValueProvider<String> mJsTransformPath;
 
-    public EntityToJson(ValueProvider<String> jsTransformPath) {
-      mJsTransformPath = jsTransformPath;
+    abstract ValueProvider<String> jsTransformPath();
+    abstract ValueProvider<String> jsTransformFunctionName();
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract EntityToJson.Builder setJsTransformPath(ValueProvider<String> jsTransformPath);
+      public abstract EntityToJson.Builder setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
+      public abstract EntityToJson build();
+    }
+
+    public static Builder newBuilder() {
+      return new com.google.cloud.dataflow.teleport.AutoValue_DatastoreToGcs_EntityToJson.Builder();
     }
 
     private JsonFormat.Printer getJsonPrinter() {
@@ -115,14 +135,16 @@ public class DatastoreToGcs {
 
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
-        String jsTransformPath = "";
-        if (mJsTransformPath.isAccessible()) {
-          jsTransformPath = mJsTransformPath.get();
+        JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
+        if (jsTransformPath().isAccessible()) {
+          jsTransformBuilder.setGcsJSPath(jsTransformPath().get());
         }
 
-        mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(jsTransformPath)
-            .build();
+        if (jsTransformFunctionName().isAccessible()) {
+          jsTransformBuilder.setFunctionName(jsTransformFunctionName().get());
+        }
+
+        mJSTransform = jsTransformBuilder.build();
       }
       return mJSTransform;
     }

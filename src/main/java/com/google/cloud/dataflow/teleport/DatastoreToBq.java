@@ -48,6 +48,7 @@ public class DatastoreToBq {
                 .withNamespace(options.getNamespace()))
         .apply("EntityToTableRow", ParDo.of(EntityToTableRow.newBuilder()
             .setJsTransformPath(options.getJsTransformPath())
+            .setJsTransformFunctionName(options.getJsTransformFunctionName())
             .setStrictCast(options.getStrictCast())
             .setTableSchemaJson(options.getBQJsonSchema())
             .build()))
@@ -120,6 +121,10 @@ public class DatastoreToBq {
     @Description("GCS path to javascript fn for transforming output")
     ValueProvider<String> getJsTransformPath();
     void setJsTransformPath(ValueProvider<String> jsTransformPath);
+
+    @Description("Javascript Transform Function Name")
+    ValueProvider<String> getJsTransformFunctionName();
+    void setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
   }
 
   /**
@@ -131,40 +136,45 @@ public class DatastoreToBq {
     private TableSchema mTableSchema;
     private Gson mGson = new Gson();
 
-    abstract ValueProvider<String> getJsTransformPath();
-    abstract ValueProvider<String> getTableSchemaJson();
-    abstract ValueProvider<Boolean> getStrictCast();
+    abstract ValueProvider<String> jsTransformPath();
+    abstract ValueProvider<String> jsTransformFunctionName();
+    abstract ValueProvider<String> tableSchemaJson();
+    abstract ValueProvider<Boolean> strictCast();
 
     @AutoValue.Builder
     public abstract static class Builder {
       public abstract EntityToTableRow.Builder setJsTransformPath(ValueProvider<String> jsTransformPath);
+      public abstract EntityToTableRow.Builder setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
       public abstract EntityToTableRow.Builder setTableSchemaJson(ValueProvider<String> tableSchemaJson);
       public abstract EntityToTableRow.Builder setStrictCast(ValueProvider<Boolean> strictCast);
       public abstract EntityToTableRow build();
     }
 
     public static Builder newBuilder() {
-      return com.google.cloud.dataflow.teleport.AutoValue_DatastoreToBq_EntityToTableRow.newBuilder();
+      return new com.google.cloud.dataflow.teleport.AutoValue_DatastoreToBq_EntityToTableRow.Builder();
     }
 
-    private TableSchema getTableSchema() {
+    private TableSchema tableSchema() {
       if (mTableSchema == null) {
         Gson gson = new Gson();
-        mTableSchema = gson.fromJson(getTableSchemaJson().get(), TableSchema.class);
+        mTableSchema = gson.fromJson(tableSchemaJson().get(), TableSchema.class);
       }
       return mTableSchema;
     }
 
-    private JSTransform getJSTransform() throws ScriptException {
+    private JSTransform jsTransform() throws ScriptException {
       if (mJSTransform == null) {
-        String jsTransformPath = "";
-        if (getJsTransformPath().isAccessible()) {
-          jsTransformPath = getJsTransformPath().get();
+        JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
+
+        if (jsTransformPath().isAccessible()) {
+          jsTransformBuilder.setGcsJSPath(jsTransformPath().get());
         }
 
-        mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(jsTransformPath)
-            .build();
+        if (jsTransformFunctionName().isAccessible()) {
+          jsTransformBuilder.setFunctionName(jsTransformFunctionName().get());
+        }
+
+        mJSTransform =jsTransformBuilder.build();
       }
       return mJSTransform;
     }
@@ -172,16 +182,15 @@ public class DatastoreToBq {
     @ProcessElement
     public void processElement(ProcessContext c) throws Exception {
       Entity entity = c.element();
-      TableSchema ts = getTableSchema();
       EntityBQTransform ebt = EntityBQTransform.newBuilder()
-          .setRowSchema(getTableSchema().getFields())
-          .setStrictCast(getStrictCast().get())
+          .setRowSchema(tableSchema().getFields())
+          .setStrictCast(strictCast().get())
           .build();
 
       TableRow row = ebt.toTableRow(entity);
 
-      if (getJSTransform().hasTransform()) {
-        String rowJson = getJSTransform().invoke(mGson.toJson(row));
+      if (jsTransform().hasTransform()) {
+        String rowJson = jsTransform().invoke(mGson.toJson(row));
         row = mGson.fromJson(rowJson, TableRow.class);
       }
 

@@ -36,6 +36,7 @@ import javax.script.ScriptException;
 @AutoValue
 public abstract class JSTransform {
   @Nullable abstract String gcsJSPath();
+  @Nullable abstract String functionName();
   abstract String engineName();
   abstract Optional<String> project();
   private static Invocable mInvocable;
@@ -43,12 +44,14 @@ public abstract class JSTransform {
   public static Builder newBuilder() {
     return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder()
         .setEngineName("JavaScript")
+        .setFunctionName("transform")
         .setGcsJSPath("");
   }
 
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setGcsJSPath(String gcsJSPath);
+    public abstract Builder setFunctionName(String functionName);
     public abstract Builder setEngineName(String engineName);
     public abstract Builder setProject(Optional<String> project);
     public abstract JSTransform build();
@@ -108,7 +111,7 @@ public abstract class JSTransform {
   }
 
   public String invoke(String data) throws ScriptException, NoSuchMethodException {
-    return (String) getInvocable().invokeFunction("transform", data);
+    return (String) getInvocable().invokeFunction(functionName(), data);
   }
 
 
