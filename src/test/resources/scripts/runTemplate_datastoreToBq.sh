@@ -15,10 +15,11 @@ cd $DIR/../../../../
 
 DATAFLOW_PROJECT="teleport-test-170818"
 DATASTORE_PROJECT="teleport-test-170818"
-DATA_PATH="gs://teleport-test/backups/*.json"
-TEMPLATE="gs://teleport-test/templates/gcsToDatastore"
-GCS_TRANSFORM="gs://teleport-test/transforms/gcsToDatastoreTransform.js"
-GCS_TRANSFORM_FUNCTION_NAME="transform"
+TEMPLATE="gs://teleport-test/templates/datastoreToBq"
+GQL="SELECT * FROM SomeOtherKind"
+BQ_TABLE_SPEC="$DATAFLOW_PROJECT:SomeOtherKind.SomeBackup"
+BQ_TABLE_SCHEMA="gs://teleport-test/schema/SomeOtherKind.schema.json"
+STRICT_CAST="true"
 JOB_NAME=""
 
 if [[ -z $JOB_NAME ]]; then
@@ -30,4 +31,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters jsonPathPrefix=$DATA_PATH,datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM,jsTransformFunctionName=$GCS_TRANSFORM_FUNCTION_NAME
+  --parameters gqlQuery="$GQL",datastoreProjectId=$DATASTORE_PROJECT,bqTableSpec=$BQ_TABLE_SPEC,bqJsonSchema=$BQ_TABLE_SCHEMA,strictCast=$STRICT_CAST

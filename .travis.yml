@@ -1,9 +1,21 @@
 language: java
+sudo: required
+dist: trusty
+
 jdk:
 - oraclejdk8
+
 os:
 - linux
+
 before_install:
+# update travis's underlying libc.
+- sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+- sudo apt-get -qq update
+- sudo apt-get -qq install g++-4.8 -y
+- sudo apt-get -qq install libstdc++6 -y
+
+# setup google cloud auth & relavent env variables
 - openssl aes-256-cbc -K $encrypted_0f54cb7871bb_key -iv $encrypted_0f54cb7871bb_iv -in service_account.json.enc -out service_account.json -d
 - curl https://sdk.cloud.google.com | bash
 - ~/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file=service_account.json
@@ -15,6 +27,7 @@ script:
 - ./gradlew test --info
 - ./src/test/resources/scripts/makeTemplate_gcsToDatastore.sh
 - ./src/test/resources/scripts/makeTemplate_datastoreToGcs.sh
+- ./src/test/resources/scripts/makeTemplate_datastoreToBq.sh
 
 env:
   global:

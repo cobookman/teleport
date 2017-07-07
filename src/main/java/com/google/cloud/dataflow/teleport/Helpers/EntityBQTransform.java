@@ -3,7 +3,6 @@ package com.google.cloud.dataflow.teleport.Helpers;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.Helpers.AutoValue_EntityBQTransform.Builder;
 import com.google.common.base.Strings;
 import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Key;
@@ -12,12 +11,15 @@ import com.google.datastore.v1.Value;
 
 import com.google.datastore.v1.Value.ValueTypeCase;
 import com.google.gson.Gson;
-import java.time.Instant;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import com.google.protobuf.util.Timestamps;
+import com.google.type.LatLng;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
@@ -25,8 +27,8 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class EntityBQTransform {
-  abstract List<TableFieldSchema> getRowSchema();
-  abstract boolean getStrictCast();
+  abstract List<TableFieldSchema> rowSchema();
+  abstract boolean strictCast();
 
 
   @AutoValue.Builder
@@ -42,7 +44,7 @@ public abstract class EntityBQTransform {
   }
 
   public TableRow toTableRow(Entity e) {
-    return toTableRow(getRowSchema(), e);
+    return toTableRow(rowSchema(), e);
   }
 
   private TableRow toTableRow(List<TableFieldSchema> tableSchema, Entity e) {
@@ -57,8 +59,6 @@ public abstract class EntityBQTransform {
       else if (fields.containsKey(columnSchema.getName())) {
         Value v = fields.get(columnSchema.getName());
         row.put(columnSchema.getName(), toRowValue(columnSchema, v));
-      } else {
-        System.err.println("Do not have field in entity: " + columnSchema.getName());
       }
     }
     return row;
@@ -150,28 +150,18 @@ public abstract class EntityBQTransform {
       return null;
     }
 
-    long seconds = v.getTimestampValue().getSeconds();
-    long millis = TimeUnit.MILLISECONDS.convert(
-        v.getTimestampValue().getNanos(), TimeUnit.NANOSECONDS);
-
-    return Instant.ofEpochMilli(seconds * 1000 + millis).toString();
+    return Timestamps.toString(v.getTimestampValue());
   }
 
   @Nullable
   private List<Object> valueToRepeated(TableFieldSchema schema, Value arrayValue) {
     boolean isArrayValue = arrayValue.getValueTypeCase().equals(ValueTypeCase.ARRAY_VALUE);
-    if (getStrictCast() && !isArrayValue) {
+    if (strictCast() && !isArrayValue) {
       return null;
     }
 
     ArrayList<Object> output = new ArrayList<>();
     TableFieldSchema repeatedSchema = schema.clone().setMode(null);
-//    TableFieldSchema repeatedSchema = new TableFieldSchema()
-//        .setName(schema.getName())
-//        .setDescription(schema.getDescription())
-//        .setType(schema.getType())
-//        .setFields(schema.getFields());
-
 
     // Handle the non strict cast requirement of having a single entity, even though
     // bq schema says its a repeated field
@@ -184,7 +174,10 @@ public abstract class EntityBQTransform {
     }
 
     for (Value value : arrayValues) {
-      output.add(toRowValue(repeatedSchema, value));
+      Object rv = toRowValue(repeatedSchema, value);
+      if (rv != null) {
+        output.add(rv);
+      }
     }
     return output;
   }
@@ -211,7 +204,7 @@ public abstract class EntityBQTransform {
 
   @Nullable
   private Double valueToFloat64(Value v) {
-    if (getStrictCast() && !v.getValueTypeCase().equals(ValueTypeCase.DOUBLE_VALUE)) {
+    if (strictCast() && !v.getValueTypeCase().equals(ValueTypeCase.DOUBLE_VALUE)) {
       return null;
     }
 
@@ -220,13 +213,25 @@ public abstract class EntityBQTransform {
         return v.getDoubleValue();
       case INTEGER_VALUE:
         return (double) v.getIntegerValue();
+      case STRING_VALUE:
+        if (Strings.isNullOrEmpty(v.getStringValue())) {
+          return null;
+        }
+
+        try {
+          return Double.parseDouble(v.getStringValue());
+        } catch (NumberFormatException e) {}
+
+        try {
+          return ((Long) Long.parseLong(v.getStringValue())).doubleValue();
+        } catch (NumberFormatException e) {}
     }
     return null;
   }
 
   @Nullable
   private Long valueToInt64(Value v) {
-    if (getStrictCast() && !v.getValueTypeCase().equals(ValueTypeCase.INTEGER_VALUE)) {
+    if (strictCast() && !v.getValueTypeCase().equals(ValueTypeCase.INTEGER_VALUE)) {
       return null;
     }
 
@@ -234,23 +239,51 @@ public abstract class EntityBQTransform {
       case INTEGER_VALUE:
         return v.getIntegerValue();
       case DOUBLE_VALUE:
-        return (long) v.getDoubleValue();
+        return Double.valueOf(v.getDoubleValue()).longValue();
+      case STRING_VALUE:
+        if (Strings.isNullOrEmpty(v.getStringValue())) {
+          return null;
+        }
+
+        try {
+          return Long.parseLong(v.getStringValue());
+        } catch (NumberFormatException e) {}
+
+        try {
+          return ((Double) Double.parseDouble(v.getStringValue())).longValue();
+        } catch (NumberFormatException e) {}
     }
     return null;
   }
 
   @Nullable
-  private byte[] valueToBytes(Value v) {
-    if (!v.getValueTypeCase().equals(ValueTypeCase.BLOB_VALUE)) {
-      return v.getBlobValue().toByteArray();
+  private String valueToBytes(Value v) {
+    if (v.getValueTypeCase().equals(ValueTypeCase.BLOB_VALUE)) {
+      return Base64.getEncoder().encodeToString(v.getBlobValue().toByteArray());
+    }
+    return null;
+  }
+
+  /**
+   * Converts a geo point to RFC 5870
+   * @param v a Datastore Value
+   * @return an RFC 5870 string encoded geopoint URI
+   */
+  @Nullable
+  private String valueToGeopoint(Value v) {
+    if (v.getGeoPointValue() == null || !v.getGeoPointValue().isInitialized()) {
+      return null;
     }
 
-    return null;
+    LatLng gp = v.getGeoPointValue();
+    return String.format("geo:%s,%s",
+        Double.toString(gp.getLatitude()),
+        Double.toString(gp.getLongitude()));
   }
 
   @Nullable
   private String valueToString(Value v) {
-    if (getStrictCast() && !v.getValueTypeCase().equals(ValueTypeCase.STRING_VALUE)) {
+    if (strictCast() && !v.getValueTypeCase().equals(ValueTypeCase.STRING_VALUE)) {
       return null;
     }
 
@@ -264,29 +297,37 @@ public abstract class EntityBQTransform {
       case BOOLEAN_VALUE:
         return Boolean.toString(v.getBooleanValue());
       case TIMESTAMP_VALUE:
-        // to RFC 3339 date string format
-        return v.getTimestampValue().toString();
+        return valueToTimestamp(v);
       case NULL_VALUE:
         return null;
       case BLOB_VALUE:
-        return Base64.getEncoder().encodeToString(v.getBlobValue().toByteArray());
+        return valueToBytes(v);
       case ARRAY_VALUE:
         ArrayList<String> arr = new ArrayList<>();
-        for (Value arrV : v.getArrayValue().getValuesList()) {
-          arr.add(valueToString(v));
+        for (Value av: v.getArrayValue().getValuesList()) {
+          arr.add(valueToString(av));
         }
         return new Gson().toJson(arr);
       case ENTITY_VALUE:
-        return new Gson().toJson(v.getEntityValue());
+        try {
+          return JsonFormat.printer()
+              .usingTypeRegistry(TypeRegistry.newBuilder()
+                  .add(Entity.getDescriptor())
+                  .build())
+              .omittingInsignificantWhitespace()
+              .print(v.getEntityValue());
+        } catch (InvalidProtocolBufferException e) {
+          e.printStackTrace();
+          return null;
+        }
       case GEO_POINT_VALUE:
-        return new Gson().toJson(v.getGeoPointValue());
+        return valueToGeopoint(v);
       case KEY_VALUE:
-        return new Gson().toJson(v.getKeyValue());
+        return keyToString(v.getKeyValue());
       default:
         throw new IllegalArgumentException(
             "ValueType Case not handled: " + v.getValueTypeCase());
     }
   }
-
 
 }

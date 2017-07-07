@@ -35,10 +35,10 @@ fi
 ./gradlew clean build shadowJar -x test
 
 java -jar build/libs/shadow-1.0-Alpha.jar \
-  gcs_to_datastore \
+  datastore_to_bq \
   --project=$PROJECT \
   --runner=DataflowRunner \
-  --gcpTempLocation=$TEMP \
+  --tempLocation=$TEMP \
   --templateLocation=$TEMPLATE
 
 if [ $? -eq 0 ]; then

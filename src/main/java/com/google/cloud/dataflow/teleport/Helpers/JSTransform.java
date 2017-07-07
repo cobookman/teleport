@@ -13,6 +13,9 @@
 
 package com.google.cloud.dataflow.teleport.Helpers;
 
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Array;
+import com.eclipsesource.v8.V8ScriptExecutionException;
 import com.google.api.gax.paging.Page;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.storage.Blob;
@@ -25,9 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 /**
@@ -35,21 +35,22 @@ import javax.script.ScriptException;
  */
 @AutoValue
 public abstract class JSTransform {
+  private V8 mRuntime;
+
   @Nullable abstract String gcsJSPath();
-  abstract String engineName();
+  @Nullable abstract String functionName();
   abstract Optional<String> project();
-  private static Invocable mInvocable;
 
   public static Builder newBuilder() {
     return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder()
-        .setEngineName("JavaScript")
+        .setFunctionName("transform")
         .setGcsJSPath("");
   }
 
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setGcsJSPath(String gcsJSPath);
-    public abstract Builder setEngineName(String engineName);
+    public abstract Builder setFunctionName(String functionName);
     public abstract Builder setProject(Optional<String> project);
     public abstract JSTransform build();
   }
@@ -107,8 +108,13 @@ public abstract class JSTransform {
     return scripts;
   }
 
-  public String invoke(String data) throws ScriptException, NoSuchMethodException {
-    return (String) getInvocable().invokeFunction("transform", data);
+  public String invoke(Object... params) throws ScriptException, NoSuchMethodException, V8ScriptExecutionException {
+    V8Array transformParams = new V8Array(getInvocable());
+    for (Object param : params) {
+      transformParams.push(param);
+    }
+
+    return getInvocable().executeStringFunction(functionName(), transformParams);
   }
 
 
@@ -117,21 +123,18 @@ public abstract class JSTransform {
   }
 
   @Nullable
-  public Invocable getInvocable() throws ScriptException {
+  public V8 getInvocable() {
     if (Strings.isNullOrEmpty(gcsJSPath())) {
       return null;
     }
 
-    if (mInvocable == null) {
-      ScriptEngineManager engineManager = new ScriptEngineManager();
-      ScriptEngine scriptEngine = engineManager.getEngineByName(engineName());
-
+    if (mRuntime == null) {
+      V8 runtime = V8.createV8Runtime();
       for (String script : getScripts()) {
-        scriptEngine.eval(script);
+        runtime.executeScript(script);
       }
-
-      mInvocable = (Invocable) scriptEngine;
+      mRuntime = runtime;
     }
-    return mInvocable;
+    return mRuntime;
   }
 }

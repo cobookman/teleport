@@ -11,11 +11,11 @@
 #  limitations under the License.
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $DIR/..
+cd $DIR/../../../../
 
-PROJECT=""
-TEMP=""
-TEMPLATE=""
+PROJECT="teleport-test-170818"
+TEMP="gs://teleport-test/temp/"
+TEMPLATE="gs://teleport-test/templates/datastoreToBq"
 
 if [[ -z $PROJECT ]]; then
   echo -n "Project Id hosting the templates (my-project-id): "
@@ -35,10 +35,10 @@ fi
 ./gradlew clean build shadowJar -x test
 
 java -jar build/libs/shadow-1.0-Alpha.jar \
-  gcs_to_datastore \
+  datastore_to_bq \
   --project=$PROJECT \
   --runner=DataflowRunner \
-  --gcpTempLocation=$TEMP \
+  --tempLocation=$TEMP \
   --templateLocation=$TEMPLATE
 
 if [ $? -eq 0 ]; then

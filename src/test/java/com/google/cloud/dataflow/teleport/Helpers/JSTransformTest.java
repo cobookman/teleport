@@ -12,6 +12,7 @@
 */
 package com.google.cloud.dataflow.teleport.Helpers;
 
+import com.eclipsesource.v8.V8ScriptExecutionException;
 import com.google.common.base.Strings;
 import javax.script.Invocable;
 import javax.script.ScriptException;
@@ -63,31 +64,37 @@ public class JSTransformTest {
     // Test JS Transform involving multiple files
     JSTransform jsTransform = JSTransform.newBuilder()
         .setGcsJSPath(goodGcsTransform)
+        .setFunctionName("transform")
         .build();
 
-    String output = (String) jsTransform.invoke( "{\"key\": \"value\"}");
+    String output = (String) jsTransform.invoke("{\"key\": \"value\"}");
     String expected = "{\"Some Property\":\"Some Key\",\"entity jsonified\":\"{\\\"key\\\": \\\"value\\\"}\"}";
     Assert.assertEquals(expected, output);
   }
 
-  public void testJSTransform_getInvocable() throws ScriptException {
+  @Test
+  public void testJSTransform_getInvocable() {
+    JSTransform jsTransform;
     // Test a good invocable
-    JSTransform jsTransform = JSTransform.newBuilder()
+    jsTransform = JSTransform.newBuilder()
         .setGcsJSPath(goodGcsTransform)
         .build();
-    Invocable invocable = jsTransform.getInvocable();
+
+    jsTransform.getInvocable();
 
     // Test an invocable that should throw an exception
-    ScriptException scriptException = null;
+    V8ScriptExecutionException ve = null;
     try {
-      JSTransform.newBuilder()
+      jsTransform = JSTransform.newBuilder()
           .setGcsJSPath(badGcsTransform)
-          .build()
-          .getInvocable();
-    } catch (ScriptException e) {
-      scriptException = e;
+          .build();
+
+      jsTransform.getInvocable();
+    } catch(V8ScriptExecutionException e) {
+      ve = e;
     }
-    Assert.assertNotNull(scriptException);
+
+    Assert.assertNotNull(ve);
   }
 
   @Test

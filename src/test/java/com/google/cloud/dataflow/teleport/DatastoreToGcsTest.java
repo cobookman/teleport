@@ -33,9 +33,10 @@ public class DatastoreToGcsTest {
 
   @Test
   public void testDatastoreToGcs_EntityToJson_noTransform() throws Exception {
-    // No Transforms
-    StaticValueProvider<String> valueProvider = StaticValueProvider.of(null);
-    DoFnTester<Entity, String> fnTester = DoFnTester.of(new EntityToJson(valueProvider));
+    DoFnTester<Entity, String> fnTester = DoFnTester.of(EntityToJson.newBuilder()
+        .setJsTransformPath(StaticValueProvider.of(null))
+        .setJsTransformFunctionName(StaticValueProvider.of(null))
+        .build());
 
     Builder entityBuilder = Entity.newBuilder();
     JsonFormat.parser().usingTypeRegistry(
@@ -51,9 +52,10 @@ public class DatastoreToGcsTest {
 
   @Test
   public void testDatastoreToGcs_EntityToJson_withTransform() throws Exception {
-    // No Transforms
-    StaticValueProvider<String> valueProvider = StaticValueProvider.of(jsTransformPath);
-    DoFnTester<Entity, String> fnTester = DoFnTester.of(new EntityToJson(valueProvider));
+    DoFnTester<Entity, String> fnTester = DoFnTester.of(EntityToJson.newBuilder()
+        .setJsTransformPath(StaticValueProvider.of(jsTransformPath))
+        .setJsTransformFunctionName(StaticValueProvider.of("transform"))
+        .build());
 
     Builder entityBuilder = Entity.newBuilder();
     JsonFormat.parser().usingTypeRegistry(
