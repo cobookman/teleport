@@ -32,7 +32,7 @@ if [[ -z $TEMPLATE ]]; then
   read TEMPLATE
 fi
 
-./gradlew clean build shadowJar
+./gradlew clean build shadowJar -x test
 
 java -jar build/libs/shadow-1.0-Alpha.jar \
   datastore_to_bq \
