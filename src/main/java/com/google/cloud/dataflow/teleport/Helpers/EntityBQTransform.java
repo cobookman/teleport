@@ -10,17 +10,18 @@ import com.google.datastore.v1.Key.PathElement;
 import com.google.datastore.v1.Value;
 
 import com.google.datastore.v1.Value.ValueTypeCase;
-import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import com.google.protobuf.util.Timestamps;
 import com.google.type.LatLng;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.apache.beam.sdk.util.Transport;
 
 /**
  * Handles the Datastore Entity to BQ Row Transformation
@@ -43,11 +44,11 @@ public abstract class EntityBQTransform {
         .setStrictCast(false);
   }
 
-  public TableRow toTableRow(Entity e) {
+  public TableRow toTableRow(Entity e) throws IOException {
     return toTableRow(rowSchema(), e);
   }
 
-  private TableRow toTableRow(List<TableFieldSchema> tableSchema, Entity e) {
+  private TableRow toTableRow(List<TableFieldSchema> tableSchema, Entity e) throws IOException {
 
     TableRow row = new TableRow();
     Map<String, Value> fields = e.getPropertiesMap();
@@ -65,7 +66,8 @@ public abstract class EntityBQTransform {
   }
 
   @Nullable
-  private Object toRowValue(TableFieldSchema schema, Value v) throws IllegalArgumentException {
+  private Object toRowValue(TableFieldSchema schema, Value v)
+      throws IllegalArgumentException, IOException {
     // handle repeated rows
     if (!Strings.isNullOrEmpty(schema.getMode()) && schema.getMode().toUpperCase().equals("REPEATED")) {
       return valueToRepeated(schema, v);
@@ -154,7 +156,8 @@ public abstract class EntityBQTransform {
   }
 
   @Nullable
-  private List<Object> valueToRepeated(TableFieldSchema schema, Value arrayValue) {
+  private List<Object> valueToRepeated(TableFieldSchema schema, Value arrayValue)
+      throws IOException {
     boolean isArrayValue = arrayValue.getValueTypeCase().equals(ValueTypeCase.ARRAY_VALUE);
     if (strictCast() && !isArrayValue) {
       return null;
@@ -183,7 +186,7 @@ public abstract class EntityBQTransform {
   }
 
   @Nullable
-  private TableRow valueToRecord(TableFieldSchema schema, Value v) {
+  private TableRow valueToRecord(TableFieldSchema schema, Value v) throws IOException {
     boolean isEntityValue = v.getValueTypeCase().equals(ValueTypeCase.ENTITY_VALUE);
     if (!isEntityValue) {
       return null;
@@ -282,7 +285,7 @@ public abstract class EntityBQTransform {
   }
 
   @Nullable
-  private String valueToString(Value v) {
+  private String valueToString(Value v) throws IOException {
     if (strictCast() && !v.getValueTypeCase().equals(ValueTypeCase.STRING_VALUE)) {
       return null;
     }
@@ -307,7 +310,7 @@ public abstract class EntityBQTransform {
         for (Value av: v.getArrayValue().getValuesList()) {
           arr.add(valueToString(av));
         }
-        return new Gson().toJson(arr);
+        return Transport.getJsonFactory().toString(arr);
       case ENTITY_VALUE:
         try {
           return JsonFormat.printer()

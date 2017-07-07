@@ -7,7 +7,6 @@ import com.google.cloud.dataflow.teleport.Helpers.EntityBQTransform;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 import com.google.cloud.dataflow.teleport.Helpers.ValueProviderHelpers;
 import com.google.datastore.v1.Entity;
-import com.google.gson.Gson;
 import java.io.IOException;
 import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
@@ -133,13 +132,12 @@ public class DatastoreToBq {
   }
 
   /**
-   * Converts a Datstore Entity to BigQuery Table Row
+   * Converts a Datstore Entity to BigQuery TableRow
    */
   @AutoValue
   public abstract static class EntityToTableRow extends DoFn<Entity, TableRow> {
     private JSTransform mJSTransform;
     private TableSchema mTableSchema;
-    private Gson mGson;
 
     abstract ValueProvider<String> jsTransformPath();
     abstract ValueProvider<String> jsTransformFunctionName();

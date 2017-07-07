@@ -6,6 +6,7 @@ import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Entity.Builder;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import java.io.IOException;
 import java.util.List;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.DoFnTester;
@@ -20,7 +21,7 @@ public class DatastoreToBqTest {
   public static final String mTableSchemaJson = "{\"fields\":[{\"name\":\"__key__\",\"type\":\"STRING\"},{\"name\":\"canvasId\",\"type\":\"STRING\"},{\"name\":\"drawingId\",\"type\":\"STRING\"},{\"name\":\"points\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"x\",\"type\":\"INTEGER\"},{\"name\":\"y\",\"type\":\"FLOAT\"}]}]}";
 
   @Test
-  public void testDatastoreToBq_EntityToTableRow_notransform() throws Exception {
+  public void testDatastoreToBq_EntityToTableRow_notransform() throws Exception, IOException {
     DoFnTester<Entity, TableRow> fnTester = DoFnTester.of(EntityToTableRow.newBuilder()
         .setStrictCast(StaticValueProvider.of(true))
         .setTableSchemaJson(StaticValueProvider.of(mTableSchemaJson))
@@ -38,6 +39,7 @@ public class DatastoreToBqTest {
     Entity entity = entityBuilder.build();
     List<TableRow> tableRows = fnTester.processBundle(entity);
     TableRow tr = tableRows.get(0);
+
     Assert.assertEquals(1, tableRows.size());
     Assert.assertEquals("key(Drawing, '31ce830e-91d0-405e-855a-abe416cadc1f')", tr.get("__key__"));
     Assert.assertEquals("79a1d9d9-e255-427a-9b09-f45157e97790", tr.get("canvasId"));

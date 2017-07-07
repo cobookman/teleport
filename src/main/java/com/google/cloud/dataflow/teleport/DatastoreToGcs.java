@@ -14,13 +14,10 @@
 package com.google.cloud.dataflow.teleport;
 
 import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.AutoValue_DatastoreToGcs_EntityToJson;
-import com.google.cloud.dataflow.teleport.DatastoreToBq.EntityToTableRow;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
-import javax.annotation.Nullable;
 import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
