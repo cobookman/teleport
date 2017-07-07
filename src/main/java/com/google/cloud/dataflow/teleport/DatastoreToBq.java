@@ -5,6 +5,7 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.dataflow.teleport.Helpers.EntityBQTransform;
 import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
+import com.google.cloud.dataflow.teleport.Helpers.ValueProviderHelpers;
 import com.google.datastore.v1.Entity;
 import com.google.gson.Gson;
 import java.io.IOException;
@@ -21,8 +22,10 @@ import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.util.Transport;
 
 /**
  * Exports Datastore Entities to BigQueryHelper
@@ -37,9 +40,11 @@ public class DatastoreToBq {
         .withValidation()
         .as(Options.class);
 
+    NestedValueProvider<String, String> bqJsonSchema = NestedValueProvider
+        .of(options.getBqJsonSchema(), new ValueProviderHelpers.GcsLoad());
+
     options.setRunner(DataflowRunner.class);
     Pipeline pipeline = Pipeline.create(options);
-
     pipeline
         .apply("IngestEntities",
             DatastoreIO.v1().read()
@@ -50,11 +55,11 @@ public class DatastoreToBq {
             .setJsTransformPath(options.getJsTransformPath())
             .setJsTransformFunctionName(options.getJsTransformFunctionName())
             .setStrictCast(options.getStrictCast())
-            .setTableSchemaJson(options.getBQJsonSchema())
+            .setTableSchemaJson(bqJsonSchema)
             .build()))
         .apply("TableRowToBigQuery", BigQueryIO.writeTableRows()
-            .to(options.getBQTableSpec())
-            .withJsonSchema(options.getBQJsonSchema())
+            .to(options.getBqTableSpec())
+            .withJsonSchema(bqJsonSchema)
             .withCreateDisposition(CreateDisposition.CREATE_IF_NEEDED)
             .withWriteDisposition(WriteDisposition.WRITE_APPEND));
     pipeline.run();
@@ -71,18 +76,18 @@ public class DatastoreToBq {
     ValueProvider<String> getDatastoreProjectId();
     void setDatastoreProjectId(ValueProvider<String> datastoreProjectId);
 
-    @Validation.Required
     @Description("Namespace of requested Entities, use `\"\"` for default")
+    @Default.String("")
     ValueProvider<String> getNamespace();
     void setNamespace(ValueProvider<String> namespace);
 
     @Validation.Required
     @Description("BigQuery Destination Table Spec ([project_id]:[dataset_id].[table_id] or [dataset_id].[table_id]")
-    ValueProvider<String> getBQTableSpec();
-    void setBQTableSpec(ValueProvider<String> bqTableSpec);
+    ValueProvider<String> getBqTableSpec();
+    void setBqTableSpec(ValueProvider<String> bqTableSpec);
 
     /**
-     * A TableSchema Object serialized as Json
+     * A TableSchema Object serialized as Json stored in GCS
      *
      * Example:
      * <pre>
@@ -91,7 +96,7 @@ public class DatastoreToBq {
      *     {"name":"someName", "type":"STRING"},
      *     {"name":"someOtherName", "type":"BOOLEAN"},
      *     {
-     *       "name": "someOtherOtherName", "type":"RECORD",
+     *       "name": "someOtherOtherName", "type":"RECORD", "mode": "REPEATED",
      *       "fields":[
      *         {"name":"someSubField", "type":"STRING"},
      *         {"name":"someOtherSubField", "type":"INTEGER"},
@@ -109,9 +114,9 @@ public class DatastoreToBq {
      * @return a ValueProvider containing the BQ Table Json Schema
      */
     @Validation.Required
-    @Description("BigQuery Table Schema in Json")
-    ValueProvider<String> getBQJsonSchema();
-    void setBQJsonSchema(ValueProvider<String> bqJsonSchema);
+    @Description("GCS Path for BigQuery Table Schema in Json")
+    ValueProvider<String> getBqJsonSchema();
+    void setBqJsonSchema(ValueProvider<String> bqJsonSchema);
 
     @Description("Should do a strict Datastore Entity to BQ Table Row cast")
     @Default.Boolean(false)
@@ -134,7 +139,7 @@ public class DatastoreToBq {
   public abstract static class EntityToTableRow extends DoFn<Entity, TableRow> {
     private JSTransform mJSTransform;
     private TableSchema mTableSchema;
-    private Gson mGson = new Gson();
+    private Gson mGson;
 
     abstract ValueProvider<String> jsTransformPath();
     abstract ValueProvider<String> jsTransformFunctionName();
@@ -154,10 +159,10 @@ public class DatastoreToBq {
       return new com.google.cloud.dataflow.teleport.AutoValue_DatastoreToBq_EntityToTableRow.Builder();
     }
 
-    private TableSchema tableSchema() {
+    private TableSchema tableSchema() throws IOException {
       if (mTableSchema == null) {
-        Gson gson = new Gson();
-        mTableSchema = gson.fromJson(tableSchemaJson().get(), TableSchema.class);
+        mTableSchema = Transport.getJsonFactory().fromString(
+            tableSchemaJson().get(), TableSchema.class);
       }
       return mTableSchema;
     }
@@ -190,8 +195,10 @@ public class DatastoreToBq {
       TableRow row = ebt.toTableRow(entity);
 
       if (jsTransform().hasTransform()) {
-        String rowJson = jsTransform().invoke(mGson.toJson(row));
-        row = mGson.fromJson(rowJson, TableRow.class);
+        String rowJson = jsTransform().invoke(
+            Transport.getJsonFactory().toString(entity),
+            Transport.getJsonFactory().toString(row));
+        row = Transport.getJsonFactory().fromString(rowJson, TableRow.class);
       }
 
       c.output(row);

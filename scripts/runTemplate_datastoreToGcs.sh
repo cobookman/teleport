@@ -15,6 +15,7 @@ DATASTORE_PROJECT=""
 TEMPLATE=""
 SAVE_PATH=""
 GCS_TRANSFORM=""
+GCS_TRANSFORM_FUNCTION_NAME=""
 GQL=""
 JOB_NAME=""
 
@@ -44,6 +45,10 @@ if [[ -z $GCS_TRANSFORM ]]; then
   read GCS_TRANSFORM
 fi
 
+if [[ -z $GCS_TRANSFORM_FUNCITON_NAME ]]; then
+  echo -n "What is the Javascript Function name for the transform: "
+  read GCS_TRANSFORM_FUNCTION_NAME
+
 if [[ -z $GQL ]]; then
   echo -n "GQL Query of datastore entities to fetch (Select * FROM SomeKind): "
   read GQL
@@ -58,4 +63,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters savePath="$SAVE_PATH",gqlQuery="$GQL",datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
+  --parameters savePath="$SAVE_PATH",gqlQuery="$GQL",datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM,jsTransformFunctionName=$GCS_TRANSFORM_FUNCTION_NAME

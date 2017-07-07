@@ -10,18 +10,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $DIR/../../../../
-
-DATAFLOW_PROJECT="teleport-test-170818"
-#DATASTORE_PROJECT="teleport-test-170818"
-DATASTORE_PROJECT="strong-moose"
-TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
-SAVE_PATH="gs://teleport-test/backups/"
-GCS_TRANSFORM="gs://teleport-test/transforms/datastoreToGcsTransform.js"
-GCS_TRANSFORM_FUNCTION_NAME="transform"
-#GQL="SELECT * FROM SomeKind"
-GQL="SELECT * FROM Drawing"
+DATAFLOW_PROJECT=""
+DATASTORE_PROJECT=""
+TEMPLATE=""
+GQL=""
+BQ_TABLE_SPEC=""
+BQ_TABLE_SCHEMA=""
+STRICT_CAST=""
+GCS_TRANSFORM=""
+GCS_TRANSFORM_FUNCTION_NAME=""
 JOB_NAME=""
 
 
@@ -40,15 +37,29 @@ if [[ -z $TEMPLATE ]]; then
   read TEMPLATE
 fi
 
-if [[ -z $SAVE_PATH ]]; then
-  echo -n "Where to save datstore entities (gs://mybucket/backups/12.30.2017.SomeKind): "
-  read SAVE_PATH
+if [[ -z $BQ_TABLE_SPEC ]]; then
+  echo -n "What is the BigQuery Table Name Spec ([projectId].[datasetId].[tableName]): "
+  read BQ_TABLE_SPEC
+fi
+
+if [[ -z $BQ_TABLE_SCHEMA ]]; then
+  echo -n "GCS path of BQ Table Schema encoded as JSON (gs://mybucket/myschema.json): "
+  read BQ_TABLE_SCHEMA
+fi
+
+if [[ -z $STRICT_CAST ]]; then
+  echo -n "Should we strictly cast (true) or lazily cast (false) datastore entity to BQ Table Row (true/false): "
+  read STRICT_CAST
 fi
 
 if [[ -z $GCS_TRANSFORM ]]; then
   echo -n "What is the GCS path of the javascript transform (gs://mybucket/transforms/): "
   read GCS_TRANSFORM
 fi
+
+if [[ -z $GCS_TRANSFORM_FUNCITON_NAME ]]; then
+  echo -n "What is the Javascript Function name for the transform: "
+  read GCS_TRANSFORM_FUNCTION_NAME
 
 if [[ -z $GQL ]]; then
   echo -n "GQL Query of datastore entities to fetch (Select * FROM SomeKind): "
@@ -64,4 +75,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters savePath="$SAVE_PATH",gqlQuery="$GQL",datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM,jsTransformFunctionName=$GCS_TRANSFORM_FUNCTION_NAME
+  --parameters gqlQuery="$GQL",datastoreProjectId=$DATASTORE_PROJECT,bqTableSpec=$BQ_TABLE_SPEC,bqJsonSchema=$BQ_TABLE_SCHEMA,strictCast=$STRICT_CAST

@@ -20,11 +20,13 @@ import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import javax.annotation.Nullable;
 import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.datastore.DatastoreIO;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -84,8 +86,8 @@ public class DatastoreToGcs {
     ValueProvider<String> getDatastoreProjectId();
     void setDatastoreProjectId(ValueProvider<String> datastoreProjectId);
 
-    @Validation.Required
     @Description("Namespace of requested Entities, use `\"\"` for default")
+    @Default.String("")
     ValueProvider<String> getNamespace();
     void setNamespace(ValueProvider<String> namespace);
 

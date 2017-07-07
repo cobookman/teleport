@@ -22,6 +22,7 @@ import java.io.IOException;
  */
 public class Main {
   private enum Pipeline {
+    DATASTORE_TO_BQ("datastore_to_bq"),
     DATASTORE_TO_GCS("datastore_to_gcs"),
     GCS_TO_DATASTORE("gcs_to_datastore");
 
@@ -56,6 +57,10 @@ public class Main {
         break;
       case GCS_TO_DATASTORE:
         GcsToDatastore.main(pipelineArgs);
+        break;
+      case DATASTORE_TO_BQ:
+        DatastoreToBq.main(pipelineArgs);
+        break;
       default:
         help("Pipeline specified does not exist");
         break;

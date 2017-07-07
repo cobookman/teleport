@@ -15,6 +15,7 @@ DATASTORE_PROJECT=""
 DATA_PATH=""
 TEMPLATE=""
 GCS_TRANSFORM=""
+GCS_TRANSFORM_FUNCTION_NAME=""
 JOB_NAME=""
 
 
@@ -43,6 +44,10 @@ if [[ -z $GCS_TRANSFORM ]]; then
   read GCS_TRANSFORM
 fi
 
+if [[ -z $GCS_TRANSFORM_FUNCTION_NAME ]]; then
+  echo -n "What is the Javascript Transform Function Name: "
+  read GCS_TRANSFORM_FUNCTION_NAME
+fi
 
 if [[ -z $JOB_NAME ]]; then
   echo -n "What should the job name be (no spaces): "
@@ -53,4 +58,4 @@ fi
 gcloud beta dataflow jobs run $JOB_NAME \
   --gcs-location="$TEMPLATE" \
   --project=$DATAFLOW_PROJECT \
-  --parameters jsonPathPrefix=$DATA_PATH,datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM
+  --parameters jsonPathPrefix=$DATA_PATH,datastoreProjectId=$DATASTORE_PROJECT,jsTransformPath=$GCS_TRANSFORM,jsTransformFunctionName=$GCS_TRANSFORM_FUNCTION_NAME
