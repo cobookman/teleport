@@ -6,10 +6,13 @@ import com.google.cloud.storage.StorageOptions;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 
 /**
- * Created by bookman on 7/6/17.
+ * Helpers around transforming ValueProviders.
  */
 public class ValueProviderHelpers {
 
+  /**
+   * Downloads String data contained in a gcs path.
+   */
   public static class GcsLoad implements SerializableFunction<String, String> {
 
     @Override

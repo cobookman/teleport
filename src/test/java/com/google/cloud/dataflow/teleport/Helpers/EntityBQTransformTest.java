@@ -13,6 +13,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +54,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow() {
+  public void testEntityBQTransform_toTableRow() throws IOException {
     Entity e;
     TableRow r;
     EntityBQTransform ebt;
@@ -109,7 +110,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_string() {
+  public void testEntityBQTransform_toTableRow_string() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -231,7 +232,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_bytes() {
+  public void testEntityBQTransform_toTableRow_bytes() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -262,7 +263,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_integer() {
+  public void testEntityBQTransform_toTableRow_integer() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -303,7 +304,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_float() {
+  public void testEntityBQTransform_toTableRow_float() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -344,7 +345,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_boolean() {
+  public void testEntityBQTransform_toTableRow_boolean() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -372,7 +373,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_record() {
+  public void testEntityBQTransform_toTableRow_record() throws IOException {
     Entity e;
     List<?> vacations;
 
@@ -430,7 +431,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_timestamp() {
+  public void testEntityBQTransform_toTableRow_timestamp() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -453,7 +454,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_date() {
+  public void testEntityBQTransform_toTableRow_date() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -476,7 +477,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_time() {
+  public void testEntityBQTransform_toTableRow_time() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
@@ -499,7 +500,7 @@ public class EntityBQTransformTest {
   }
 
   @Test
-  public void testEntityBQTransform_toTableRow_datetime() {
+  public void testEntityBQTransform_toTableRow_datetime() throws IOException {
     Entity e;
 
     EntityBQTransform strictEbt = EntityBQTransform.newBuilder()
