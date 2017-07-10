@@ -11,7 +11,7 @@
   limitations under the License.
 */
 
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import javax.script.ScriptException;
 
 /**
  * Handles all Javascript Transform related aspects
@@ -42,7 +41,7 @@ public abstract class JSTransform {
   abstract Optional<String> project();
 
   public static Builder newBuilder() {
-    return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder()
+    return new com.google.cloud.dataflow.teleport.helpers.AutoValue_JSTransform.Builder()
         .setFunctionName("transform")
         .setGcsJSPath("");
   }
@@ -108,7 +107,7 @@ public abstract class JSTransform {
     return scripts;
   }
 
-  public String invoke(Object... params) throws ScriptException, NoSuchMethodException, V8ScriptExecutionException {
+  public String invoke(Object... params) throws NoSuchMethodException, V8ScriptExecutionException {
     V8Array transformParams = new V8Array(getInvocable());
     for (Object param : params) {
       transformParams.push(param);
@@ -118,7 +117,7 @@ public abstract class JSTransform {
   }
 
 
-  public boolean hasTransform() throws ScriptException {
+  public boolean hasTransform() {
     return (getInvocable() != null);
   }
 

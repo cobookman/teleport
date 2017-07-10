@@ -13,7 +13,6 @@
 
 package com.google.cloud.dataflow.teleport;
 
-import javax.script.ScriptException;
 import java.util.Arrays;
 import java.io.IOException;
 
@@ -24,7 +23,7 @@ public class Main {
   private enum Pipeline {
     DATASTORE_TO_BQ("datastore_to_bq"),
     DATASTORE_TO_GCS("datastore_to_gcs"),
-    GCS_TO_DATASTORE("gcs_to_datastore");
+    GCSJSON_TO_DATASTORE("gcsjson_to_datastore");
 
     private String mArgument;
 
@@ -45,7 +44,7 @@ public class Main {
   }
 
   public static void main(String[] cliargs)
-      throws IllegalAccessException, InstantiationException, IOException, ScriptException {
+      throws IllegalAccessException, InstantiationException, IOException {
     if (cliargs.length < 1) {
       throw new IllegalArgumentException(help("No pipeline specified"));
     }
@@ -55,8 +54,8 @@ public class Main {
       case DATASTORE_TO_GCS:
         DatastoreToGcs.main(pipelineArgs);
         break;
-      case GCS_TO_DATASTORE:
-        GcsToDatastore.main(pipelineArgs);
+      case GCSJSON_TO_DATASTORE:
+        GcsJsonToDatastore.main(pipelineArgs);
         break;
       case DATASTORE_TO_BQ:
         DatastoreToBq.main(pipelineArgs);

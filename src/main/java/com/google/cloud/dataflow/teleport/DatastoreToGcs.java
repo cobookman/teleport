@@ -14,11 +14,10 @@
 package com.google.cloud.dataflow.teleport;
 
 import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
+import com.google.cloud.dataflow.teleport.helpers.JSTransform;
 
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
-import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
@@ -42,7 +41,7 @@ public class DatastoreToGcs {
   /**
    * Runs the DatastoreToGcs dataflow pipeline
    */
-  public static void main(String[] args) throws IOException, ScriptException {
+  public static void main(String[] args) throws IOException {
     Options options = PipelineOptionsFactory.fromArgs(args)
         .withValidation()
         .as(Options.class);
@@ -132,7 +131,7 @@ public class DatastoreToGcs {
       return mJsonPrinter;
     }
 
-    private JSTransform getJSTransform() throws ScriptException {
+    private JSTransform getJSTransform() {
       if (mJSTransform == null) {
         JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
         if (jsTransformPath().isAccessible()) {

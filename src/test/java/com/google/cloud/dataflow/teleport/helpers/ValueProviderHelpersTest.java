@@ -1,6 +1,6 @@
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
-import com.google.cloud.dataflow.teleport.Helpers.ValueProviderHelpers.GcsLoad;
+import com.google.cloud.dataflow.teleport.helpers.ValueProviderHelpers.GcsLoad;
 import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Assert;

@@ -1,4 +1,4 @@
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
@@ -14,10 +14,8 @@ import com.google.protobuf.NullValue;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import org.junit.Assert;
 import org.junit.Test;
 

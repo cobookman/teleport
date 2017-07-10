@@ -1,4 +1,4 @@
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
@@ -6,7 +6,7 @@ import com.google.cloud.storage.StorageOptions;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 
 /**
- * Helpers around transforming ValueProviders.
+ * helpers around transforming ValueProviders.
  */
 public class ValueProviderHelpers {
 

@@ -1,4 +1,4 @@
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
@@ -40,7 +40,7 @@ public abstract class EntityBQTransform {
   }
 
   public static Builder newBuilder() {
-    return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_EntityBQTransform.Builder()
+    return new com.google.cloud.dataflow.teleport.helpers.AutoValue_EntityBQTransform.Builder()
         .setStrictCast(false);
   }
 

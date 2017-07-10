@@ -3,12 +3,11 @@ package com.google.cloud.dataflow.teleport;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.Helpers.EntityBQTransform;
-import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
-import com.google.cloud.dataflow.teleport.Helpers.ValueProviderHelpers;
+import com.google.cloud.dataflow.teleport.helpers.EntityBQTransform;
+import com.google.cloud.dataflow.teleport.helpers.JSTransform;
+import com.google.cloud.dataflow.teleport.helpers.ValueProviderHelpers;
 import com.google.datastore.v1.Entity;
 import java.io.IOException;
-import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
@@ -34,7 +33,7 @@ public class DatastoreToBq {
   /**
    * Runs the DatastoreToBigQuery dataflow pipeline
    */
-  public static void main(String[] args) throws IOException, ScriptException {
+  public static void main(String[] args) throws IOException {
     Options options = PipelineOptionsFactory.fromArgs(args)
         .withValidation()
         .as(Options.class);
@@ -165,7 +164,7 @@ public class DatastoreToBq {
       return mTableSchema;
     }
 
-    private JSTransform jsTransform() throws ScriptException {
+    private JSTransform jsTransform() {
       if (mJSTransform == null) {
         JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
 

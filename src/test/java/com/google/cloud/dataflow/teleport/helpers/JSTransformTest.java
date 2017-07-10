@@ -10,12 +10,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-package com.google.cloud.dataflow.teleport.Helpers;
+package com.google.cloud.dataflow.teleport.helpers;
 
 import com.eclipsesource.v8.V8ScriptExecutionException;
 import com.google.common.base.Strings;
-import javax.script.Invocable;
-import javax.script.ScriptException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -60,7 +58,7 @@ public class JSTransformTest {
 
 
   @Test
-  public void testJSTransform_invoke() throws ScriptException, NoSuchMethodException {
+  public void testJSTransform_invoke() throws NoSuchMethodException {
     // Test JS Transform involving multiple files
     JSTransform jsTransform = JSTransform.newBuilder()
         .setGcsJSPath(goodGcsTransform)
@@ -98,7 +96,7 @@ public class JSTransformTest {
   }
 
   @Test
-  public void testJSTransform_hasTransform() throws ScriptException {
+  public void testJSTransform_hasTransform() {
     JSTransform jsTransform = JSTransform.newBuilder()
         .setGcsJSPath("")
         .build();

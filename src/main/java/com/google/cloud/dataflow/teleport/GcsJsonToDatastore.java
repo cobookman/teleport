@@ -14,14 +14,13 @@
 package com.google.cloud.dataflow.teleport;
 
 import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
+import com.google.cloud.dataflow.teleport.helpers.JSTransform;
 import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Key;
 import com.google.datastore.v1.PartitionId;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import java.io.IOException;
-import javax.script.ScriptException;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
@@ -37,12 +36,12 @@ import org.apache.beam.sdk.transforms.ParDo;
 /**
  * GCS to Datastore Records
  */
-public class GcsToDatastore {
+public class GcsJsonToDatastore {
 
   /**
-   * Runs the GcsToDatastore dataflow pipeline
+   * Runs the GcsJsonToDatastore dataflow pipeline
    */
-  public static void main(String[] args) throws IOException, ScriptException {
+  public static void main(String[] args) throws IOException {
     Options options = PipelineOptionsFactory.fromArgs(args)
         .withValidation()
         .as(Options.class);
@@ -102,7 +101,7 @@ public class GcsToDatastore {
     }
 
     public static Builder newBuilder() {
-      return new com.google.cloud.dataflow.teleport.AutoValue_GcsToDatastore_JsonToEntity.Builder();
+      return new com.google.cloud.dataflow.teleport.AutoValue_GcsJsonToDatastore_JsonToEntity.Builder();
     }
 
     private JsonFormat.Parser getJsonParser() {
@@ -117,7 +116,7 @@ public class GcsToDatastore {
       return mJsonParser;
     }
 
-    private JSTransform getJSTransform() throws ScriptException {
+    private JSTransform getJSTransform() {
       if (mJSTransform == null) {
         JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
         if (jsTransformPath().isAccessible()) {
