@@ -192,7 +192,7 @@ public class DatastoreToBq {
       TableRow row = ebt.toTableRow(entity);
 
       if (jsTransform().hasTransform()) {
-        String rowJson = jsTransform().invoke(
+        String rowJson = (String) jsTransform().invoke(
             Transport.getJsonFactory().toString(entity),
             Transport.getJsonFactory().toString(row));
         row = Transport.getJsonFactory().fromString(rowJson, TableRow.class);

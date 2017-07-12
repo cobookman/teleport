@@ -153,7 +153,7 @@ public class DatastoreToGcs {
       String json = getJsonPrinter().print(entity);
 
       if (getJSTransform().hasTransform()) {
-        json = getJSTransform().invoke(json);
+        json = (String) getJSTransform().invoke(json);
       }
 
       c.output(json);

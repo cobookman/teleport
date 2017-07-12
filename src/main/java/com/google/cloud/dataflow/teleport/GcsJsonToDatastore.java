@@ -137,7 +137,7 @@ public class GcsJsonToDatastore {
       String entityJson = c.element();
 
       if (getJSTransform().hasTransform()) {
-        entityJson = getJSTransform().invoke(entityJson);
+        entityJson = (String) getJSTransform().invoke(entityJson);
       }
 
       Entity.Builder builder = Entity.newBuilder();

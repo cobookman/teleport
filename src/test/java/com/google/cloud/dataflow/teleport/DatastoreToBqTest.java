@@ -4,12 +4,20 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.dataflow.teleport.DatastoreToBq.EntityToTableRow;
 import com.google.datastore.v1.Entity;
 import com.google.datastore.v1.Entity.Builder;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import java.io.IOException;
 import java.util.List;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import jdk.nashorn.api.scripting.AbstractJSObject;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.DoFnTester;
+import org.apache.beam.sdk.util.Transport;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,5 +52,4 @@ public class DatastoreToBqTest {
     Assert.assertEquals("key(Drawing, '31ce830e-91d0-405e-855a-abe416cadc1f')", tr.get("__key__"));
     Assert.assertEquals("79a1d9d9-e255-427a-9b09-f45157e97790", tr.get("canvasId"));
   }
-
 }

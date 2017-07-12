@@ -13,9 +13,6 @@
 
 package com.google.cloud.dataflow.teleport.helpers;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8ScriptExecutionException;
 import com.google.api.gax.paging.Page;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.storage.Blob;
@@ -28,13 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 /**
  * Handles all Javascript Transform related aspects
  */
 @AutoValue
 public abstract class JSTransform {
-  private V8 mRuntime;
+  public static final String mEngineName = "JavaScript";
+  private ScriptEngine mRuntime;
 
   @Nullable abstract String gcsJSPath();
   @Nullable abstract String functionName();
@@ -107,33 +109,61 @@ public abstract class JSTransform {
     return scripts;
   }
 
-  public String invoke(Object... params) throws NoSuchMethodException, V8ScriptExecutionException {
-    V8Array transformParams = new V8Array(getInvocable());
-    for (Object param : params) {
-      transformParams.push(param);
+  /**
+   * Gives the JSON output of the command
+   * @param params JSON encoded arguments to be passed to the js function
+   * @return JSON encoded output of function
+   * @throws ScriptException
+   * @throws NoSuchMethodException
+   */
+  public String invoke(String... params) throws ScriptException, NoSuchMethodException {
+    Object[] jsObjs = new Object[params.length];
+    for (int i = 0; i < params.length; ++i) {
+      Object jsObj = getInvocable().invokeFunction("__fromJson__", params[i]);
+      jsObjs[i] = jsObj;
     }
 
-    return getInvocable().executeStringFunction(functionName(), transformParams);
+    Object result = getInvocable().invokeFunction(functionName(), jsObjs);
+    return (String) getInvocable().invokeFunction("__toJson__", result);
   }
 
 
-  public boolean hasTransform() {
+  public boolean hasTransform() throws ScriptException {
     return (getInvocable() != null);
   }
 
   @Nullable
-  public V8 getInvocable() {
+  public synchronized ScriptEngine getEngine() throws ScriptException {
     if (Strings.isNullOrEmpty(gcsJSPath())) {
       return null;
     }
 
     if (mRuntime == null) {
-      V8 runtime = V8.createV8Runtime();
+      ScriptEngineManager engineManager = new ScriptEngineManager();
+      ScriptEngine scriptEngine = engineManager.getEngineByName(mEngineName);
+
       for (String script : getScripts()) {
-        runtime.executeScript(script);
+        scriptEngine.eval(script);
       }
-      mRuntime = runtime;
+      initHelperJsFunctions(scriptEngine);
+      mRuntime = scriptEngine;
     }
     return mRuntime;
+  }
+
+  /**
+   * Add necessary helper javascript functions
+   * @param scriptEngine
+   * @throws ScriptException
+   */
+  private void initHelperJsFunctions(ScriptEngine scriptEngine) throws ScriptException {
+    scriptEngine.eval("function __fromJson__(json) { return JSON.parse(json); }");
+    scriptEngine.eval("function __toJson__(obj) { return JSON.stringify(obj); }");
+  }
+
+
+  @Nullable
+  public Invocable getInvocable() throws ScriptException {
+    return (Invocable) getEngine();
   }
 }
