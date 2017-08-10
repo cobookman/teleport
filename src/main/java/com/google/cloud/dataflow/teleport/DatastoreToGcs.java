@@ -13,14 +13,26 @@
 
 package com.google.cloud.dataflow.teleport;
 
-import com.google.auto.value.AutoValue;
-import com.google.cloud.dataflow.teleport.helpers.JSTransform;
+import avro.com.google.datastore.v1.ArrayValue;
+import avro.com.google.datastore.v1.Key;
+import avro.com.google.datastore.v1.LatLng;
+import avro.com.google.datastore.v1.PartitionId;
+import avro.com.google.datastore.v1.PathElement;
+import avro.com.google.datastore.v1.Value;
 
-import com.google.protobuf.util.JsonFormat;
-import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import com.google.protobuf.util.Timestamps;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.io.TextIO;
+
+import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.datastore.DatastoreIO;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
@@ -49,19 +61,17 @@ public class DatastoreToGcs {
     options.setRunner(DataflowRunner.class);
 
     Pipeline pipeline = Pipeline.create(options);
-
+    Schema schema = avro.com.google.datastore.v1.Entity.getClassSchema();
     pipeline
         .apply("IngestEntities",
             DatastoreIO.v1().read()
                 .withProjectId(options.getDatastoreProjectId())
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
-        .apply("EntityToJson", ParDo.of(EntityToJson.newBuilder()
-            .setJsTransformPath(options.getJsTransformPath())
-            .setJsTransformFunctionName(options.getJsTransformFunctionName())
-            .build()))
-        .apply("JsonToGcs", TextIO.write().to(options.getSavePath())
-            .withSuffix(".json"));
+        .apply("EntityToAvroEntity", ParDo.of(new EntityToAvro()))
+        .apply("AvroToGCS", AvroIO.writeGenericRecords(schema.toString())
+            .to(options.getSavePath())
+            .withSuffix(".avro"));
 
     pipeline.run();
   }
@@ -86,77 +96,111 @@ public class DatastoreToGcs {
     @Default.String("")
     ValueProvider<String> getNamespace();
     void setNamespace(ValueProvider<String> namespace);
-
-    @Description("GCS path to javascript fn for transforming output")
-    ValueProvider<String> getJsTransformPath();
-    void setJsTransformPath(ValueProvider<String> jsTransformPath);
-
-    @Description("Javascript Transform Function Name")
-    ValueProvider<String> getJsTransformFunctionName();
-    void setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
   }
 
   /**
-   * Converts a Datstore Entity to Protobuf encoded Json
+   * Converts a Datstore Entity to AvroEntity
    */
-  @AutoValue
-  public abstract static class EntityToJson extends DoFn<Entity, String> {
-    private JsonFormat.Printer mJsonPrinter;
-    private JSTransform mJSTransform;
+  public static class EntityToAvro extends DoFn<Entity, GenericRecord> {
 
-    abstract ValueProvider<String> jsTransformPath();
-    abstract ValueProvider<String> jsTransformFunctionName();
-
-    @AutoValue.Builder
-    public abstract static class Builder {
-      public abstract EntityToJson.Builder setJsTransformPath(ValueProvider<String> jsTransformPath);
-      public abstract EntityToJson.Builder setJsTransformFunctionName(ValueProvider<String> jsTransformFunctionName);
-      public abstract EntityToJson build();
-    }
-
-    public static Builder newBuilder() {
-      return new com.google.cloud.dataflow.teleport.AutoValue_DatastoreToGcs_EntityToJson.Builder();
-    }
-
-    private JsonFormat.Printer getJsonPrinter() {
-      if (mJsonPrinter == null) {
-        TypeRegistry typeRegistry = TypeRegistry.newBuilder()
-            .add(Entity.getDescriptor())
-            .build();
-
-        mJsonPrinter = JsonFormat.printer()
-            .usingTypeRegistry(typeRegistry)
-            .omittingInsignificantWhitespace();
+    public avro.com.google.datastore.v1.Entity entityToAvroEntity(Entity entity) {
+      Map<CharSequence, Value> values = new HashMap<>();
+      for (Entry<String, com.google.datastore.v1.Value> entry : entity.getPropertiesMap().entrySet()) {
+        values.put(entry.getKey(), valueToAvroValue(entry.getValue()));
       }
-      return mJsonPrinter;
+
+      return avro.com.google.datastore.v1.Entity.newBuilder()
+          .setKey(keyToAvroKey(entity.getKey()))
+          .setValues(values)
+          .build();
     }
 
-    private JSTransform getJSTransform() {
-      if (mJSTransform == null) {
-        JSTransform.Builder jsTransformBuilder = JSTransform.newBuilder();
-        if (jsTransformPath().isAccessible()) {
-          jsTransformBuilder.setGcsJSPath(jsTransformPath().get());
+    public Key keyToAvroKey(com.google.datastore.v1.Key k) {
+      List<PathElement> path = new ArrayList<>();
+      for (com.google.datastore.v1.Key.PathElement pathElm : k.getPathList()) {
+        PathElement.Builder builder = PathElement.newBuilder();
+        switch (pathElm.getIdTypeCase()) {
+          case ID:
+            builder.setId(pathElm.getId());
+            break;
+          case NAME:
+            builder.setName(pathElm.getName());
+            break;
         }
-
-        if (jsTransformFunctionName().isAccessible()) {
-          jsTransformBuilder.setFunctionName(jsTransformFunctionName().get());
-        }
-
-        mJSTransform = jsTransformBuilder.build();
+        builder.setKind(pathElm.getKind());
+        path.add(builder.build());
       }
-      return mJSTransform;
+
+      return Key.newBuilder()
+          .setPartitionIdBuilder(PartitionId.newBuilder()
+              .setNamespaceId(k.getPartitionId().getNamespaceId())
+              .setProjectId(k.getPartitionId().getProjectId()))
+          .setPath(path)
+          .build();
+    }
+
+    public Value valueToAvroValue(com.google.datastore.v1.Value v) {
+      Value.Builder builder = null;
+      switch (v.getValueTypeCase()) {
+        case INTEGER_VALUE:
+          builder = Value.newBuilder().setIntegerValue(v.getIntegerValue());
+          break;
+        case BOOLEAN_VALUE:
+          builder = Value.newBuilder().setBooleanValue(v.getBooleanValue());
+          break;
+        case DOUBLE_VALUE:
+          builder = Value.newBuilder().setDoubleValue(v.getDoubleValue());
+          break;
+        case STRING_VALUE:
+          builder = Value.newBuilder().setStringValue(v.getStringValue());
+          break;
+        case GEO_POINT_VALUE:
+          builder = Value.newBuilder().setGeoPointValueBuilder(LatLng.newBuilder()
+              .setLatitude(v.getGeoPointValue().getLatitude())
+              .setLongitude(v.getGeoPointValue().getLongitude()));
+          break;
+        case BLOB_VALUE:
+          builder = Value.newBuilder().setBlobValue(v.getBlobValue().asReadOnlyByteBuffer());
+          break;
+        case ARRAY_VALUE:
+          List<com.google.datastore.v1.Value> valList = v.getArrayValue().getValuesList();
+          List<Value> avroVals = Arrays.asList(new Value[valList.size()]);
+          for(int i = 0; i < avroVals.size(); ++i) {
+            avroVals.set(i, valueToAvroValue(valList.get(i)));
+          }
+          builder =  Value.newBuilder().setArrayValueBuilder(
+              ArrayValue.newBuilder().setValues(avroVals));
+          break;
+        case ENTITY_VALUE:
+          Entity e = v.getEntityValue();
+          builder = Value.newBuilder().setEntityValue(entityToAvroEntity(e));
+          break;
+        case TIMESTAMP_VALUE:
+          builder = Value.newBuilder().setTimestampValue(
+              Timestamps.toMicros(v.getTimestampValue()));
+          break;
+        case KEY_VALUE:
+          builder = Value.newBuilder().setKeyValue(keyToAvroKey(v.getKeyValue()));
+          break;
+
+        /**
+         * Null must be the last value
+         */
+        case NULL_VALUE:
+          builder = Value.newBuilder().setNullValue(null);
+          break;
+      }
+
+      if (builder == null) {
+        throw new IllegalArgumentException("type case not supported");
+      }
+
+      return builder.build();
     }
 
     @ProcessElement
     public void processElement(ProcessContext c) throws Exception {
-      Entity entity = c.element();
-      String json = getJsonPrinter().print(entity);
-
-      if (getJSTransform().hasTransform()) {
-        json = (String) getJSTransform().invoke(json);
-      }
-
-      c.output(json);
+      c.output(entityToAvroEntity(c.element()));
     }
   }
 

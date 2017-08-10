@@ -117,16 +117,8 @@ public abstract class JSTransform {
    * @throws NoSuchMethodException
    */
   public String invoke(String... params) throws ScriptException, NoSuchMethodException {
-    Object[] jsObjs = new Object[params.length];
-    for (int i = 0; i < params.length; ++i) {
-      Object jsObj = getInvocable().invokeFunction("__fromJson__", params[i]);
-      jsObjs[i] = jsObj;
-    }
-
-    Object result = getInvocable().invokeFunction(functionName(), jsObjs);
-    return (String) getInvocable().invokeFunction("__toJson__", result);
+    return (String) getInvocable().invokeFunction(functionName(), (Object[]) params);
   }
-
 
   public boolean hasTransform() throws ScriptException {
     return (getInvocable() != null);
@@ -145,20 +137,9 @@ public abstract class JSTransform {
       for (String script : getScripts()) {
         scriptEngine.eval(script);
       }
-      initHelperJsFunctions(scriptEngine);
       mRuntime = scriptEngine;
     }
     return mRuntime;
-  }
-
-  /**
-   * Add necessary helper javascript functions
-   * @param scriptEngine
-   * @throws ScriptException
-   */
-  private void initHelperJsFunctions(ScriptEngine scriptEngine) throws ScriptException {
-    scriptEngine.eval("function __fromJson__(json) { return JSON.parse(json); }");
-    scriptEngine.eval("function __toJson__(obj) { return JSON.stringify(obj); }");
   }
 
 

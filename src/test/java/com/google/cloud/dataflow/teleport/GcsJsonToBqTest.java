@@ -14,7 +14,7 @@ import org.junit.Test;
 public class GcsJsonToBqTest {
   public static final String mJson = "{\"strKey\":\"string value\", \"intKey\": 1019}";
   public static final String mTableSchemaJson = "{\"fields\":[{\"name\":\"strKey\",\"type\":\"STRING\"},{\"name\":\"intKey\",\"type\":\"INTEGER\"}]}";
-
+  /**
   @Test
   public void testGcsJsonToBq_testDoFn_noTransform() throws Exception {
     DoFnTester<String, TableRow> fnTester = DoFnTester
@@ -28,5 +28,6 @@ public class GcsJsonToBqTest {
     Assert.assertEquals(1, rows.size());
     Assert.assertEquals("string value", rows.get(0).get("strKey"));
     Assert.assertEquals(1019L, rows.get(0).get("intKey"));
-  }
+  }  **/
+
 }

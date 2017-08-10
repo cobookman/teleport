@@ -29,7 +29,8 @@ dependencies {
     compile group: 'org.apache.beam', name: 'beam-sdks-java-extensions-protobuf', version: '2.0.0'
     compile group: 'com.google.cloud', name: 'google-cloud-storage', version: '1.1.0'
     compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.1.0'
-    compile  group: 'com.google.auto.value', name: 'auto-value', version: '1.4.1'
+    compile group: 'com.google.auto.value', name: 'auto-value', version: '1.4.1'
+    compile group: 'org.apache.avro', name: 'avro', version: '1.8.2'
 
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
     compile group: 'org.slf4j', name: 'slf4j-jdk14', version: '1.7.21'
@@ -51,3 +52,13 @@ shadowJar {
 task wrapper(type: Wrapper) {
     gradleVersion = '3.5'
 }
+
+task genAvro(type: Exec) {
+    commandLine 'java', '-jar', 'avro-tools-1.8.2.jar',
+            'compile',
+            'schema',
+            'src/avro/com/google/datastore/v1.avsc',
+            'gen/';
+}
+
+compileJava.dependsOn genAvro
